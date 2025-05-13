@@ -1,0 +1,26 @@
+{
+  "name": "@bios/ipxl",
+  "version": "1.0.4-beta.13",
+  "description": "",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build-es": "babel src -d dist",
+    "build-umd": "./node_modules/.bin/webpack",
+    "build": "npm run build-es && npm run build-umd"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/cli": "^7.16.0",
+    "@babel/core": "^7.16.0",
+    "@babel/preset-env": "^7.16.4",
+    "path": "^0.12.7",
+    "webpack": "^5.64.3",
+    "webpack-cli": "^4.9.1"
+  },
+  "dependencies": {
+    "ua-parser-js": "^1.0.36",
+    "uuid": "^8.3.2"
+  }
+}

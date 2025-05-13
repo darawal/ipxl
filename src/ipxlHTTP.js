@@ -1,0 +1,102 @@
+import { getConfig } from "./store";
+import { log } from "./log";
+import {
+  handleSession,
+  addNewUniqueIDAndTimeStamp,
+  getSessionId,
+} from "./session";
+import { queueEvents } from "./queueData";
+import { handleErrors, validatePayload } from "./utils";
+
+export const sendData = ({ type, eventData, queueData, configName }) => {
+  handleSession();
+  const storeConfig = getConfig(configName);
+  const sessionId = getSessionId(configName);
+
+  if (!validatePayload(eventData, storeConfig)) {
+    return;
+  }
+
+  const eventPayload = { ...eventData, sessionId };
+  let payload = null;
+
+  if (queueData && storeConfig?.queueCapacity > 0) {
+    const [continueQueuing, eventData] = queueEvents(
+      storeConfig,
+      type,
+      eventPayload
+    );
+    if (continueQueuing) {
+      return;
+    } else {
+      payload = eventData;
+    }
+  } else {
+    payload = JSON.stringify({
+      type,
+      events: [eventPayload],
+    });
+  }
+
+  fetch(storeConfig?.endpoint, {
+    headers: {
+      accept: "*/*",
+      "cache-control": "no-cache",
+      "content-type": "application/json",
+      "sec-fetch-site": "cross-site",
+    },
+    keepalive: true,
+    body: payload,
+    method: "POST",
+    mode: "cors",
+    credentials: "omit",
+  })
+    .then(handleErrors)
+    .then((response) => {
+      log(response);
+    })
+    .catch((error) => {
+      log(error);
+      //When evenMetadata payload is missing with sessionId
+      if (error && error.status === 400 && error.statusText === "Bad Request") {
+        addNewUniqueIDAndTimeStamp();
+      }
+    });
+};
+
+export const sendIpxlData = async ({ type, eventData, configName }) => {
+  handleSession(configName);
+  const storeConfig = getConfig(configName);
+  const sessionId = getSessionId(configName);
+
+  if (!validatePayload(eventData, storeConfig)) {
+    return;
+  }
+
+  const payload = JSON.stringify({ type, ...eventData, sessionId });
+
+  fetch(storeConfig?.endpoint, {
+    headers: {
+      accept: "*/*",
+      "cache-control": "no-cache",
+      "content-type": "application/json",
+      "sec-fetch-site": "cross-site",
+    },
+    keepalive: true,
+    body: payload,
+    method: "POST",
+    mode: "cors",
+    credentials: "omit",
+  })
+    .then(handleErrors)
+    .then((response) => {
+      log(response);
+    })
+    .catch((error) => {
+      log(error);
+      //When evenMetadata payload is missing with sessionId
+      if (error && error.status === 400 && error.statusText === "Bad Request") {
+        addNewUniqueIDAndTimeStamp(configName);
+      }
+    });
+};
